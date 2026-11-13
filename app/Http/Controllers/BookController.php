@@ -55,6 +55,11 @@ class BookController extends Controller
 
     public function destroy(Book $book)
     {
+        if ($book->activeLoansCount() > 0) {
+            return redirect()->route('books.index')
+                ->with('error', 'No se puede eliminar el libro "' . $book->title . '" porque tiene préstamos activos sin devolver.');
+        }
+
         $book->delete();
         return redirect()->route('books.index')->with('success', 'Libro eliminado con éxito.');
     }

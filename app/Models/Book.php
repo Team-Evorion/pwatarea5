@@ -21,4 +21,14 @@ class Book extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function activeLoansCount(): int
+    {
+        return $this->transactions()->whereNull('date_of_return')->count();
+    }
+
+    public function availableCopies(): int
+    {
+        return max(0, $this->quantity - $this->activeLoansCount());
+    }
 }
