@@ -31,8 +31,9 @@
                         <td><span class="badge bg-info text-dark">{{ $book->genre ?? 'General' }}</span></td>
                         <td>{{ $book->year }}</td>
                         <td>
-                            <span class="badge {{ $book->quantity > 0 ? 'bg-success' : 'bg-danger' }}">
-                                {{ $book->quantity }} disponibles
+                            @php $disponibles = $book->availableCopies(); @endphp
+                            <span class="badge {{ $disponibles > 0 ? 'bg-success' : 'bg-danger' }}">
+                                {{ $disponibles }} / {{ $book->quantity }} disponibles
                             </span>
                         </td>
                         @if(Auth::user()->role && Auth::user()->role->name !== 'Reader')
