@@ -10,21 +10,43 @@ use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
-    public function index()
-    {
-        $user = Auth::user();
+   public function index(Request $request)
+{
+    // Obtener el usuario autenticado
+    $user = Auth::user();
 
-        $query = Transaction::with(['user', 'book'])
-            ->orderBy('created_at', 'desc');
+    // Obtener el filtro seleccionado
+    $status = $request->query('status', 'all');
 
-        if ($user->role?->name === 'Reader') {
-            $query->where('user_id', $user->id);
-        }
-
-        $transactions = $query->paginate(10);
-
-        return view('transactions.index', compact('transactions'));
+    // Validar el estado recibido
+    if (!in_array($status, ['all', 'borrowed', 'returned'], true)) {
+        $status = 'all';
     }
+
+    // Preparar la consulta de préstamos
+    $query = Transaction::with(['user', 'book'])
+        ->orderBy('created_at', 'desc');
+
+    // Los lectores solo pueden consultar sus préstamos
+    if ($user->role?->name === 'Reader') {
+        $query->where('user_id', $user->id);
+    }
+
+    // Mostrar préstamos pendientes de devolución
+    if ($status === 'borrowed') {
+        $query->whereNull('date_of_return');
+    }
+
+    // Mostrar préstamos devueltos
+    if ($status === 'returned') {
+        $query->whereNotNull('date_of_return');
+    }
+
+    // Paginar y conservar el filtro seleccionado
+    $transactions = $query->paginate(10)->withQueryString();
+
+    return view('transactions.index', compact('transactions', 'status'));
+}
     public function create()
 {
     // Solo administradores y bibliotecarios

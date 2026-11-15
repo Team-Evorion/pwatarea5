@@ -3,10 +3,27 @@
 @section('content')
 <div class="container py-4">
 
-    <h2 class="mb-4">Préstamos de Biblioteca</h2>
+   {{-- Filtros de préstamos --}}
+    <div class="mb-4">
+        <div class="btn-group" role="group" aria-label="Filtrar préstamos">
 
-    {{-- Botón para registrar préstamos --}}
-    @if(in_array(auth()->user()->role?->name, ['Administrator', 'Librarian'], true))
+            <a href="{{ route('transactions.index', ['status' => 'all']) }}"
+               class="btn {{ $status === 'all' ? 'btn-primary' : 'btn-outline-primary' }}">
+                Todos
+            </a>
+
+            <a href="{{ route('transactions.index', ['status' => 'borrowed']) }}"
+               class="btn {{ $status === 'borrowed' ? 'btn-warning' : 'btn-outline-warning' }}">
+                Prestados
+            </a>
+
+            <a href="{{ route('transactions.index', ['status' => 'returned']) }}"
+               class="btn {{ $status === 'returned' ? 'btn-success' : 'btn-outline-success' }}">
+                Devueltos
+            </a>
+
+        </div>
+    </div>
         <div class="mb-3">
             <a href="{{ route('transactions.create') }}"
                class="btn btn-primary">
