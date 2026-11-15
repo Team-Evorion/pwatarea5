@@ -51,9 +51,34 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-            return redirect()->intended(route('books.index'))->with('success', 'Bienvenido de nuevo.');
-        }
+    $request->session()->regenerate();
+
+    // Obtener el rol del usuario autenticado
+    $role = Auth::user()->role?->name;
+
+    // Seleccionar el dashboard según el rol
+    $dashboard = match ($role) {
+        'Administrator' => 'dashboard.administrator',
+        'Librarian'     => 'dashboard.librarian',
+        'Reader'        => 'dashboard.reader',
+        default         => null,
+    };
+
+    // Evitar el acceso de usuarios sin rol válido
+    if ($dashboard === null) {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->withErrors([
+            'email' => 'Tu cuenta no tiene un rol válido.',
+        ]);
+    }
+
+    // Redirigir al panel correspondiente
+    return redirect()->route($dashboard)
+        ->with('success', 'Bienvenido de nuevo.');
+}
 
         return back()->withErrors([
             'email' => 'Las credenciales no coinciden con nuestros registros.',

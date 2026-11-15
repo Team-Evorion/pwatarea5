@@ -39,11 +39,22 @@
                         @if(Auth::user()->role && Auth::user()->role->name !== 'Reader')
                             <td class="text-center">
                                 <a href="{{ route('books.edit', $book) }}" class="btn btn-sm btn-warning me-1">Editar</a>
-                                <form action="{{ route('books.destroy', $book) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar este libro?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger" type="submit">Eliminar</button>
-                                </form>
+</a>
+
+@if(Auth::user()->role?->name === 'Administrator')
+    <form action="{{ route('books.destroy', $book) }}"
+          method="POST"
+          class="d-inline"
+          onsubmit="return confirm('¿Seguro que deseas eliminar este libro?')">
+
+        @csrf
+        @method('DELETE')
+
+        <button class="btn btn-sm btn-danger" type="submit">
+            Eliminar
+        </button>
+    </form>
+@endif
                             </td>
                         @endif
                     </tr>
