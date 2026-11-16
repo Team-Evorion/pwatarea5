@@ -35,7 +35,9 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('books.index')->with('success', 'Cuenta creada con éxito.');
+        return redirect()
+            ->route('dashboard.reader')
+            ->with('success', 'Cuenta creada con éxito.');
     }
 
     public function showLogin()

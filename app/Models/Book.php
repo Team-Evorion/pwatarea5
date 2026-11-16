@@ -15,6 +15,7 @@ class Book extends Model
         'year',
         'genre',
         'quantity',
+        'cover_path',
     ];
 
     public function transactions()
@@ -30,5 +31,18 @@ class Book extends Model
     public function availableCopies(): int
     {
         return max(0, $this->quantity - $this->activeLoansCount());
+    }
+
+    public function getFormattedYearAttribute(): string
+    {
+        if ($this->year === null || (int) $this->year === 0) {
+            return 'Sin fecha';
+        }
+
+        $year = (int) $this->year;
+
+        return abs($year) . (
+            $year < 0 ? ' a. C.' : ' d. C.'
+        );
     }
 }

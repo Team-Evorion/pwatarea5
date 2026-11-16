@@ -1,16 +1,16 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\DB;
 use App\Models\Transaction;
 use App\Models\Book;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Services\LoanService;
 use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
-   public function index(Request $request)
+    public function index(Request $request)
 {
     // Obtener el usuario autenticado
     $user = Auth::user();
@@ -52,7 +52,7 @@ class TransactionController extends Controller
     // Solo administradores y bibliotecarios
     // pueden acceder al formulario.
     abort_unless(
-        in_array(auth()->user()->role?->name, [
+        in_array(Auth::user()->role?->name, [
             'Administrator',
             'Librarian'
         ], true),
@@ -72,10 +72,10 @@ class TransactionController extends Controller
 
     return view('transactions.create', compact('readers', 'books'));
 }
-    public function store(Request $request)
+    public function store(Request $request, LoanService $loanService)
     {
         abort_unless(
-            in_array(auth()->user()->role?->name, [
+            in_array(Auth::user()->role?->name, [
                 'Administrator',
                 'Librarian'
             ], true),
@@ -87,8 +87,7 @@ class TransactionController extends Controller
             'book_id' => 'required|integer|exists:books,id',
         ]);
 
-        $reader = User::with('role')
-            ->findOrFail($validated['user_id']);
+        $reader = User::with('role')->findOrFail($validated['user_id']);
 
         if ($reader->role?->name !== 'Reader') {
             return back()
@@ -98,58 +97,32 @@ class TransactionController extends Controller
                 ->withInput();
         }
 
-        $registered = DB::transaction(function () use ($validated) {
-            $book = Book::findOrFail($validated['book_id']);
-
-            if ($book->availableCopies() <= 0) {
-                return false;
-            }
-
-            Transaction::create([
-                'user_id' => $validated['user_id'],
-                'book_id' => $book->id,
-                'date_of_issue' => now()->toDateString(),
-                'date_of_return' => null,
-            ]);
-
-            return true;
-        });
-
-        if (!$registered) {
-            return back()
-                ->withErrors([
-                    'book_id' => 'Este libro no tiene ejemplares disponibles.'
-                ])
-                ->withInput();
-        }
+        $loanService->prestarLibro(
+            (int) $validated['user_id'],
+            (int) $validated['book_id']
+        );
 
         return redirect()
             ->route('transactions.index')
             ->with('success', 'Préstamo registrado correctamente.');
     }
-     public function returnBook(Transaction $transaction)
-    {
-        // Solo el administrador y el bibliotecario
-        // pueden registrar devoluciones.
+    public function returnBook(
+        Transaction $transaction,
+        LoanService $loanService
+    ) {
         abort_unless(
-            in_array(auth()->user()->role?->name, [
+            in_array(Auth::user()->role?->name, [
                 'Administrator',
                 'Librarian'
             ], true),
             403
         );
 
-        // Evitar devolver dos veces el mismo préstamo.
-        if ($transaction->date_of_return !== null) {
-            return redirect()
-                ->route('transactions.index')
-                ->with('error', 'Este préstamo ya fue devuelto.');
-        }
-
-        // Registrar la fecha de devolución.
-        $transaction->update([
-            'date_of_return' => now()->toDateString(),
-        ]);
+        $loanService->devolverLibro(
+            (int) $transaction->id,
+            (int) Auth::id(),
+            true
+        );
 
         return redirect()
             ->route('transactions.index')
