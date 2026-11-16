@@ -7,7 +7,27 @@
         <a href="{{ route('books.create') }}" class="btn btn-primary">+ Nuevo Libro</a>
     @endif
 </div>
+<!-- Buscador de libros -->
+<form action="{{ route('books.index') }}" method="GET" class="mb-4">
+    <div class="input-group">
+        <input
+            type="text"
+            name="search"
+            class="form-control"
+            placeholder="Buscar por título, autor o género..."
+            value="{{ $search ?? '' }}"
+            aria-label="Buscar libros"
+        >
 
+        <button type="submit" class="btn btn-primary">
+            Buscar
+        </button>
+
+        <a href="{{ route('books.index') }}" class="btn btn-outline-secondary">
+            Limpiar
+        </a>
+    </div>
+</form>
 <div class="card shadow-sm border-0">
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle mb-0">
@@ -39,11 +59,22 @@
                         @if(Auth::user()->role && Auth::user()->role->name !== 'Reader')
                             <td class="text-center">
                                 <a href="{{ route('books.edit', $book) }}" class="btn btn-sm btn-warning me-1">Editar</a>
-                                <form action="{{ route('books.destroy', $book) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar este libro?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-danger" type="submit">Eliminar</button>
-                                </form>
+</a>
+
+@if(Auth::user()->role?->name === 'Administrator')
+    <form action="{{ route('books.destroy', $book) }}"
+          method="POST"
+          class="d-inline"
+          onsubmit="return confirm('¿Seguro que deseas eliminar este libro?')">
+
+        @csrf
+        @method('DELETE')
+
+        <button class="btn btn-sm btn-danger" type="submit">
+            Eliminar
+        </button>
+    </form>
+@endif
                             </td>
                         @endif
                     </tr>

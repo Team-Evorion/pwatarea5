@@ -11,8 +11,50 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold" href="{{ route('books.index') }}">Biblioteca PWA</a>
-            <div class="collapse navbar-collapse">
+            <button class="navbar-toggler" type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#menuBiblioteca"
+        aria-controls="menuBiblioteca"
+        aria-expanded="false"
+        aria-label="Mostrar menú">
+    <span class="navbar-toggler-icon"></span>
+</button>
+            <div class="collapse navbar-collapse" id="menuBiblioteca">
                 <ul class="navbar-nav ms-auto align-items-center">
+                    @auth
+                    @php
+    $dashboardRoute = match (Auth::user()->role?->name) {
+        'Administrator' => 'dashboard.administrator',
+        'Librarian'     => 'dashboard.librarian',
+        'Reader'        => 'dashboard.reader',
+        default         => null,
+    };
+@endphp
+
+@if($dashboardRoute)
+    <li class="nav-item">
+        <a class="nav-link text-white"
+           href="{{ route($dashboardRoute) }}">
+            Mi Panel
+        </a>
+    </li>
+@endif
+   <li class="nav-item">
+    <a class="nav-link text-white"
+       href="{{ route('books.index') }}">
+        Catálogo de libros
+    </a>
+</li>
+
+    @if(in_array(Auth::user()->role?->name, ['Administrator', 'Librarian']))
+        <li class="nav-item">
+            <a class="nav-link text-white"
+               href="{{ route('books.create') }}">
+                Agregar libro
+            </a>
+        </li>
+    @endif
+@endauth
                     @auth
                         <li class="nav-item me-3 text-light">
                             Hola, <strong>{{ Auth::user()->username }}</strong> 

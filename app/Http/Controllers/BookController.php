@@ -7,11 +7,31 @@ use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
-    public function index()
-    {
-        $books = Book::paginate(10);
-        return view('books.index', compact('books'));
+   public function index(Request $request)
+{
+    // Obtener el texto ingresado por el usuario
+    $search = trim($request->input('search', ''));
+
+    // Preparar la consulta de libros
+    $query = Book::query();
+
+    // Aplicar el filtro si existe una búsqueda
+    if ($search !== '') {
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', '%' . $search . '%')
+              ->orWhere('author', 'like', '%' . $search . '%')
+              ->orWhere('genre', 'like', '%' . $search . '%');
+        });
     }
+
+    // Obtener resultados paginados
+    $books = $query->orderBy('title')
+                   ->paginate(10)
+                   ->withQueryString();
+
+    // Enviar resultados a la vista
+    return view('books.index', compact('books', 'search'));
+}
 
     public function create()
     {
