@@ -4,7 +4,38 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\TransactionController;
-Route::redirect('/', '/books');
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\DashboardController;
+
+Route::get('/', function () {
+
+    /** @var \App\Models\User|null $user */
+    $user = Auth::user();
+
+    // Si no ha iniciado sesión, enviar al login.
+    if ($user === null) {
+        return redirect()->route('login');
+    }
+
+    // Determinar el dashboard según el rol.
+    $dashboard = match ($user->role?->name) {
+        'Administrator' => 'dashboard.administrator',
+        'Librarian' => 'dashboard.librarian',
+        'Reader' => 'dashboard.reader',
+        default => null,
+    };
+
+    // Rechazar usuarios sin un rol válido.
+    abort_if(
+        $dashboard === null,
+        403,
+        'Tu cuenta no tiene un rol válido.'
+    );
+
+    return redirect()->route($dashboard);
+});
+
 
 // Rutas de invitados
 Route::middleware('guest')->group(function () {
@@ -43,42 +74,46 @@ Route::middleware('auth')->group(function () {
         Route::put('/books/{book}', [BookController::class, 'update'])->name('books.update');
     });
 
-    // Solo el administrador puede eliminar libros
+
+    // Funciones exclusivas del administrador
     Route::middleware('role:Administrator')->group(function () {
-        Route::delete('/books/{book}', [BookController::class, 'destroy'])->name('books.destroy');
+
+        // Eliminar libros
+        Route::delete('/books/{book}', [BookController::class, 'destroy'])
+            ->name('books.destroy');
+
+        // Gestión de usuarios
+        Route::get('/users', [UserController::class, 'index'])
+            ->name('users.index');
+
+        // Actualizar rol de un usuario
+        Route::patch('/users/{user}/role', [UserController::class, 'updateRole'])
+            ->name('users.role.update');
+
     });
+
 });
-/*
-|--------------------------------------------------------------------------
-| Dashboard del Administrador
-|--------------------------------------------------------------------------
-| Acceso exclusivo para usuarios con rol Administrator.
-*/
 
+// Dashboard del administrador
 Route::middleware(['auth', 'role:Administrator'])
-    ->get('/dashboard/administrator', function () {
-        return view('dashboards.administrator');
-    })
+    ->get(
+        '/dashboard/administrator',
+        [DashboardController::class, 'administrator']
+    )
     ->name('dashboard.administrator');
-    /*
-|--------------------------------------------------------------------------
-| Dashboard del Bibliotecario
-|--------------------------------------------------------------------------
-*/
 
+// Dashboard del bibliotecario
 Route::middleware(['auth', 'role:Librarian'])
-    ->get('/dashboard/librarian', function () {
-        return view('dashboards.librarian');
-    })
+    ->get(
+        '/dashboard/librarian',
+        [DashboardController::class, 'librarian']
+    )
     ->name('dashboard.librarian');
-    /*
-|--------------------------------------------------------------------------
-| Dashboard del Lector
-|--------------------------------------------------------------------------
-*/
 
+// Dashboard del lector
 Route::middleware(['auth', 'role:Reader'])
-    ->get('/dashboard/reader', function () {
-        return view('dashboards.reader');
-    })
+    ->get(
+        '/dashboard/reader',
+        [DashboardController::class, 'reader']
+    )
     ->name('dashboard.reader');
